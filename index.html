@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Змейка для телефона</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #222;
+    font-family: sans-serif;
+    touch-action: none;
+  }
+  canvas {
+    background-color: #111;
+    display: block;
+  }
+  .controls {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    gap: 5px;
+  }
+  .btn {
+    width: 60px;
+    height: 60px;
+    background-color: #444;
+    color: white;
+    font-size: 24px;
+    border: none;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="400" height="400"></canvas>
+<div class="controls">
+  <div></div>
+  <button class="btn" id="up">↑</button>
+  <div></div>
+  <button class="btn" id="left">←</button>
+  <div></div>
+  <button class="btn" id="right">→</button>
+  <div></div>
+  <button class="btn" id="down">↓</button>
+  <div></div>
+</div>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const box = 20;
+
+let snake = [{x: 8*box, y: 8*box}];
+let food = {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
+// Начинаем движение вправо
+let dx = box;
+let dy = 0;
+let score = 0;
+
+function changeDirection(newDx, newDy){
+  // нельзя двигаться в противоположную сторону
+  if(dx + newDx !== 0 || dy + newDy !== 0){
+    dx = newDx;
+    dy = newDy;
+  }
+}
+
+document.getElementById("up").addEventListener("click", () => changeDirection(0, -box));
+document.getElementById("down").addEventListener("click", () => changeDirection(0, box));
+document.getElementById("left").addEventListener("click", () => changeDirection(-box, 0));
+document.getElementById("right").addEventListener("click", () => changeDirection(box, 0));
+
+// Свайпы для мобильных
+let startX, startY;
+canvas.addEventListener("touchstart", e => {
+  const touch = e.touches[0];
+  startX = touch.clientX;
+  startY = touch.clientY;
+});
+
+canvas.addEventListener("touchend", e => {
+  const touch = e.changedTouches[0];
+  const dxSwipe = touch.clientX - startX;
+  const dySwipe = touch.clientY - startY;
+  if(Math.abs(dxSwipe) > Math.abs(dySwipe)){
+    if(dxSwipe > 0) changeDirection(box,0);
+    else changeDirection(-box,0);
+  } else {
+    if(dySwipe > 0) changeDirection(0,box);
+    else changeDirection(0,-box);
+  }
+});
+
+function collision(head, array){
+  for(let i=0;i<array.length;i++){
+    if(head.x===array[i].x && head.y===array[i].y) return true;
+  }
+  return false;
+}
+
+function draw(){
+  ctx.fillStyle="#111";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  for(let i=0;i<snake.length;i++){
+    ctx.fillStyle = (i===0) ? "lime" : "green";
+    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+  }
+
+  ctx.fillStyle="red";
+  ctx.fillRect(food.x, food.y, box, box);
+
+  let snakeX = snake[0].x + dx;
+  let snakeY = snake[0].y + dy;
+
+  // Проверка столкновения с границами и с самим собой
+  if(snakeX<0||snakeX>=canvas.width||snakeY<0||snakeY>=canvas.height||collision({x:snakeX,y:snakeY},snake)){
+    clearInterval(game);
+    alert("Игра окончена! Очки: " + score);
+    return;
+  }
+
+  if(snakeX===food.x && snakeY===food.y){
+    score++;
+    food = {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
+  } else {
+    snake.pop();
+  }
+
+  snake.unshift({x:snakeX,y:snakeY});
+}
+
+// Запускаем игру
+let game = setInterval(draw, 200);
+</script>
+</body>
+</html>
